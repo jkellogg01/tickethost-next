@@ -1,78 +1,75 @@
+import "server-only";
+import { jwtVerify, SignJWT } from "jose";
+import { SessionPayload } from "./definitions";
 import { cookies } from "next/headers";
-import { db } from "@/db";
-import { sessions } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-export async function createSession(id: number) {
+const secretKey = process.env.SESSION_SECRET!;
+const encodedKey = new TextEncoder().encode(secretKey);
+
+export async function encrypt(payload: SessionPayload) {
+	return new SignJWT(payload)
+		.setProtectedHeader({ alg: "HS256" })
+		.setIssuedAt()
+		.setExpirationTime("7d")
+		.sign(encodedKey);
+}
+
+export async function decrypt(session: string = "") {
+	try {
+		const { payload } = await jwtVerify(session, encodedKey, {
+			algorithms: ["HS256"],
+		});
+		return payload;
+	} catch (err) {
+		console.error("failed to verify session");
+	}
+}
+
+export async function createSession(userID: string) {
 	const expiresAt = new Date(Date.now() + ONE_WEEK_MS);
+	const session = await encrypt({
+		userID,
+		expiresAt,
+	});
 
-	const data = await db
-		.insert(sessions)
-		.values({
-			userID: id,
-			expiresAt,
-		})
-		.returning({ id: sessions.id });
-
-	const sessionID = data[0].id;
-
-	const cookieStore = await cookies();
-	cookieStore.set("session", sessionID, {
-		httpOnly: true,
-		secure: true,
-		expires: expiresAt,
-		sameSite: "lax",
-		path: "/",
+	await cookies().then((store) => {
+		store.set("session", session, {
+			httpOnly: true,
+			secure: true,
+			expires: expiresAt,
+			sameSite: "lax",
+			path: "/",
+		});
 	});
 }
 
 export async function updateSession() {
-	const sessionID = (await cookies()).get("session")?.value;
-	if (!sessionID) {
-		return;
+	const session = await cookies().then((store) => {
+		return store.get("session")?.value;
+	});
+	const payload = await decrypt(session);
+
+	if (!session || !payload) {
+		return null;
 	}
 
-	const data = await db
-		.select()
-		.from(sessions)
-		.where(eq(sessions.id, sessionID));
+	const expires = new Date(Date.now() + ONE_WEEK_MS);
+	payload.expiresAt = expires;
 
-	const session = data[0];
-	if (!session || session.expiresAt.valueOf() <= Date.now()) {
-		return;
-	}
-
-	const expiresAt = new Date(Date.now() + ONE_WEEK_MS);
-
-	await db
-		.update(sessions)
-		.set({
-			updatedAt: new Date(),
-			expiresAt,
-		})
-		.where(eq(sessions.id, sessionID));
-
-	const cookieStore = await cookies();
-	// we only store a new cookie to extend the expiration time
-	cookieStore.set("session", sessionID, {
-		httpOnly: true,
-		secure: true,
-		expires: expiresAt,
-		sameSite: "lax",
-		path: "/",
+	await cookies().then(async (store) => {
+		store.set("session", await encrypt(payload), {
+			httpOnly: true,
+			secure: true,
+			expires: expires,
+			sameSite: "lax",
+			path: "/",
+		});
 	});
 }
 
 export async function deleteSession() {
-	const sessionID = (await cookies()).get("session")?.value;
-	if (!sessionID) {
-		return;
-	}
-
-	await db.delete(sessions).where(eq(sessions.id, sessionID));
-
 	const cookieStore = await cookies();
 	cookieStore.delete("session");
 }

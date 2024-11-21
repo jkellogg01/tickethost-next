@@ -10,17 +10,6 @@ export const users = table("account", {
 	updatedAt: pg.timestamp("created_at").notNull().defaultNow(),
 });
 
-export const sessions = table("session", {
-	id: pg.uuid().defaultRandom().primaryKey(),
-	userID: pg
-		.integer("account_id")
-		.references(() => users.id)
-		.notNull(),
-	createdAt: pg.timestamp("created_at").notNull().defaultNow(),
-	updatedAt: pg.timestamp("updated_at").notNull().defaultNow(),
-	expiresAt: pg.timestamp("expires_at").notNull(),
-});
-
 export const bands = table("band", {
 	id: pg.serial().primaryKey(),
 	name: pg.text().notNull(),

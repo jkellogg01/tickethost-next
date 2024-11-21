@@ -26,3 +26,5 @@ export const LoginFormSchema = z.object({
 	email: z.string().email().trim(),
 	password: z.string().trim(),
 });
+
+export type SessionPayload = {};

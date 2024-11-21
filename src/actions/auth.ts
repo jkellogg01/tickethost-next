@@ -39,7 +39,7 @@ export async function register(formData: FormData) {
 		};
 	}
 
-	createSession(user.id);
+	createSession(user.id.toString());
 	redirect("/dashboard");
 }
 
@@ -70,10 +70,11 @@ export async function login(formData: FormData) {
 		};
 	}
 
-	createSession(user.id);
+	createSession(user.id.toString());
 	redirect("/dashboard");
 }
 
 export async function logout() {
 	await deleteSession();
+	redirect("/login");
 }
