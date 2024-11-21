@@ -1,8 +1,9 @@
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { RegisterFormSchema } from "@/lib/definitions";
-import { createSession } from "@/lib/session";
-import { hash } from "bcrypt";
+import { LoginFormSchema, RegisterFormSchema } from "@/lib/definitions";
+import { createSession, deleteSession } from "@/lib/session";
+import { compare, hash } from "bcrypt";
+import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 export async function register(formData: FormData) {
@@ -40,4 +41,39 @@ export async function register(formData: FormData) {
 
 	createSession(user.id);
 	redirect("/dashboard");
+}
+
+export async function login(formData: FormData) {
+	const validatedFields = LoginFormSchema.safeParse({
+		email: formData.get("email"),
+		password: formData.get("password"),
+	});
+
+	if (!validatedFields.success) {
+		return {
+			errors: validatedFields.error.flatten().fieldErrors,
+		};
+	}
+
+	const { email, password } = validatedFields.data;
+	const data = await db.select().from(users).where(eq(users.email, email));
+	const user = data[0];
+	if (!user) {
+		return {
+			message: "invalid credentials, please try again",
+		};
+	}
+	const passwordMatches = await compare(password, user.password);
+	if (!passwordMatches) {
+		return {
+			message: "invalid credentials, please try again",
+		};
+	}
+
+	createSession(user.id);
+	redirect("/dashboard");
+}
+
+export async function logout() {
+	await deleteSession();
 }

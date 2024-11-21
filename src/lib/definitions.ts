@@ -21,3 +21,8 @@ export const RegisterFormSchema = z.object({
 		: passwordPermissive
 	).trim(),
 });
+
+export const LoginFormSchema = z.object({
+	email: z.string().email().trim(),
+	password: z.string().trim(),
+});
