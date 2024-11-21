@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "../styles/globals.css";
 import { Inter, Roboto_Mono } from "next/font/google";
+import TopNav from "@/components/topnav";
 
 const inter = Inter({
 	subsets: ["latin"],
@@ -26,7 +27,10 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<body className={`${inter.variable} ${robotoMono.variable} antialiased`}>
+			<body
+				className={`font-sans ${inter.variable} ${robotoMono.variable} antialiased`}
+			>
+				<TopNav />
 				{children}
 			</body>
 		</html>
