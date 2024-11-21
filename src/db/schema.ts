@@ -17,13 +17,17 @@ export const bands = table("band", {
 	updatedAt: pg.timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const userBands = table("account_band", {
-	accountID: pg.integer("account_id").references(() => users.id),
-	bandID: pg.integer("band_id").references(() => bands.id),
-	admin: pg.boolean().notNull().default(false),
-	createdAt: pg.timestamp("created_at").notNull().defaultNow(),
-	updatedAt: pg.timestamp("updated_at").notNull().defaultNow(),
-});
+export const userBands = table(
+	"account_band",
+	{
+		accountID: pg.integer("account_id").references(() => users.id),
+		bandID: pg.integer("band_id").references(() => bands.id),
+		admin: pg.boolean().notNull().default(false),
+		createdAt: pg.timestamp("created_at").notNull().defaultNow(),
+		updatedAt: pg.timestamp("updated_at").notNull().defaultNow(),
+	},
+	(table) => [pg.primaryKey({ columns: [table.accountID, table.bandID] })],
+);
 
 export const shows = table("show", {
 	id: pg.serial().primaryKey(),
