@@ -8,7 +8,7 @@ export default function TopNav({
 		<>
 			<div className="h-16 border-b border-white/85 content-end">
 				<nav className="flex flex-row justify-between items-baseline container mx-auto pb-2">
-					<Link href="/" className="text-3xl font-semibold">
+					<Link href="/" className="text-3xl font-bold">
 						TicketHost
 					</Link>
 					<TopNavAuthCluster session={session} />
